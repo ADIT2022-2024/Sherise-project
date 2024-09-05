@@ -6,7 +6,13 @@ import { AdminComponent } from './admin.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { UserComponent } from './user/user.component';
 import { UpdateuserComponent } from './updateuser/updateuser.component';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { PostCategoryComponent } from './post-category/post-category.component';
+import { PostProductComponent } from './post-product/post-product.component';
+import { DemoAngularMaterialModule } from '../DemoAngularMaterial';
+import { provideHttpClient, withFetch } from '@angular/common/http';
+import { PostCouponComponent } from './post-coupon/post-coupon.component';
+
 
 
 @NgModule({
@@ -14,12 +20,20 @@ import { FormsModule } from '@angular/forms';
     AdminComponent,
     DashboardComponent,
     UserComponent,
-    UpdateuserComponent
+    UpdateuserComponent,
+    PostCategoryComponent,
+    PostProductComponent,
+    PostCouponComponent
   ],
   imports: [
     CommonModule,
     AdminRoutingModule,
-    FormsModule
+    FormsModule,
+    ReactiveFormsModule,
+    DemoAngularMaterialModule
+  ],
+  providers: [
+    provideHttpClient(withFetch()), // Modern HTTP client provider
   ]
 })
 export class AdminModule { }

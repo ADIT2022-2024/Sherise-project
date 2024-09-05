@@ -33,21 +33,47 @@ export class LoginComponent implements OnInit {
     this.hidePassword = !this.hidePassword;
   }
 
-  onSubmit(): void {
-    const username = this.loginForm.get('email')!.value;
-    const password = this.loginForm.get('password')!.value;
+onSubmit(): void {
+  const username = this.loginForm.get('email')!.value;
+  const password = this.loginForm.get('password')!.value;
 
-    this.authService.login(username, password).subscribe(
-      (res) => {
+  this.authService.login(username, password).subscribe(
+    (res) => {
+      // Assuming 'res' contains the token and user information
+      if (res.token && res.user) {
+        // Save the token and user data to local storage
+        this.userStorageService.saveToken(res.token);
+        this.userStorageService.saveUser(res.user);
+
+      // Get the user's name from the storage
+            const userName = this.userStorageService.getUserName();
+
+            // Display the welcome message
+            this.snackBar.open(`Welcome, ${userName || 'Friend'}! 🎉 We're glad to see you!`, 'Close', {
+              duration: 3000,
+              horizontalPosition: 'center',
+              verticalPosition: 'top',
+              panelClass: ['welcome-snackbar']
+            });
+
+
+        // Redirect based on user role
         if (this.userStorageService.isAdminLoggedIn()) {
           this.router.navigateByUrl('admin/dashboard');
         } else if (this.userStorageService.isCustomerLoggedIn()) {
           this.router.navigateByUrl('home');
+        } else {
+          this.router.navigateByUrl('/');  // Redirect to a default route or error page
         }
-      },
-      (error) => {
-        this.snackBar.open('Bad credentials', 'ERROR', { duration: 5000 });
       }
-    );
-  }
+    },
+    (error) => {
+      this.snackBar.open('Bad credentials', 'ERROR', { duration: 5000 });
+    }
+  );
+}
+
+
+
+
 }

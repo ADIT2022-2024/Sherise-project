@@ -41,6 +41,8 @@ import { QuizComponent } from './LearnwithUs/quiz/quiz.component';
 import { HygQuizComponent } from './LearnwithUs/hygquiz/hygquiz.component';
 import { SignupComponent } from './signup/signup.component';
 import { LoginComponent } from './login/login.component';
+import { AuthGuard } from './auth.guard'; // Adjust the path if necessary
+
 
 const routes: Routes = [
   { path: '', redirectTo: '/home', pathMatch: 'full' },
@@ -50,7 +52,7 @@ const routes: Routes = [
   { path: 'mcycle', component: McycleComponent },
   { path: 'hygiene', component: HygieneComponent },
   { path: 'pshy', component: PshyComponent },
-  { path: 'education', component: EducationComponent },
+ { path: 'education', component: EducationComponent, canActivate: [AuthGuard], data: { role: 'CUSTOMER' } },
   { path: 'healthcare-access', component: HealthcareAccessComponent },
   { path: 'hcamps', component: HcampsComponent },
   { path: 'parents', component: ParentsComponent },
@@ -72,7 +74,7 @@ const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'signup', component: SignupComponent },
   { path: 'products', component: ProductsComponent },
-  { path: 'cart', component: CartComponent },
+  { path: 'cart', component: CartComponent, canActivate: [AuthGuard] },
   { path: 'checkout', component: CheckoutComponent },
 
 

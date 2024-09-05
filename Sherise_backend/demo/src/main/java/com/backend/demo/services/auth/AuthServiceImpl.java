@@ -64,6 +64,8 @@ public class AuthServiceImpl implements AuthService {
     public void sendThankYouEmail(String email) {
         String subject = "Thank you for registering!";
         String message = "Dear User,\n\nThank you for registering on our platform.\n\nBest regards,\nSheRise";
-        signupEmailService.sendEmail(email, subject, message);  // Use SignupEmailService to send the email
+        signupEmailService.sendEmail(email, subject, message);  // Use SignupEmailService to send the email
+        //
     }
+
 }

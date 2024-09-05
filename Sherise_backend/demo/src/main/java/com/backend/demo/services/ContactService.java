@@ -31,7 +31,7 @@ public class ContactService {
                             "Message: %s\n\n" +
                             "If you have any further questions or need assistance, please do not hesitate to contact us.\n\n" +
                             "Best Regards,\n" +
-                            "Your Company Name",
+                            "SheRise",
                     savedContact.getName(),
                     savedContact.getName(),
                     savedContact.getEmail(),
