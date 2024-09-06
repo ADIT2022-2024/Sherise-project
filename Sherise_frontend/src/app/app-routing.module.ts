@@ -42,7 +42,7 @@ import { HygQuizComponent } from './LearnwithUs/hygquiz/hygquiz.component';
 import { SignupComponent } from './signup/signup.component';
 import { LoginComponent } from './login/login.component';
 import { AuthGuard } from './auth.guard'; // Adjust the path if necessary
-
+import { DonateComponent } from './donate/donate.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/home', pathMatch: 'full' },
@@ -76,6 +76,8 @@ const routes: Routes = [
   { path: 'products', component: ProductsComponent },
   { path: 'cart', component: CartComponent, canActivate: [AuthGuard] },
   { path: 'checkout', component: CheckoutComponent },
+
+  { path: 'donate', component: DonateComponent },
 
 
 
