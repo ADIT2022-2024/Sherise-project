@@ -34,7 +34,6 @@ import { PshyHormonesBlogComponent } from './Blogs/pshy-hormones-blog/pshy-hormo
 
 import { ProductsComponent } from './Services/products/products.component';
 import { CartComponent } from './Services/cart/cart.component';
-import { CheckoutComponent } from './Services/checkout/checkout.component';
 import { HeaderComponent } from './header/header.component';
 import { FooterComponent } from './footer/footer.component';
 
@@ -90,7 +89,6 @@ import { MyOrdersComponent } from './Services/my-orders/my-orders.component';
 
     ProductsComponent,
     CartComponent,
-    CheckoutComponent,
     HeaderComponent,
     FooterComponent,
 
