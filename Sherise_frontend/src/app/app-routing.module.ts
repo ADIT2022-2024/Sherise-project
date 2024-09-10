@@ -28,6 +28,7 @@ import { PshyHormonesBlogComponent } from './Blogs/pshy-hormones-blog/pshy-hormo
 import { ProductsComponent } from './Services/products/products.component';
 import { CartComponent } from './Services/cart/cart.component';
 import { CheckoutComponent } from './Services/checkout/checkout.component';
+import { MyOrdersComponent } from './Services/my-orders/my-orders.component';
 
 
 import { SakhiyaComponent } from './Events/sakhiya/sakhiya.component';
@@ -44,6 +45,7 @@ import { LoginComponent } from './login/login.component';
 import { AuthGuard } from './auth.guard'; // Adjust the path if necessary
 import { DonateComponent } from './donate/donate.component';
 
+
 const routes: Routes = [
   { path: '', redirectTo: '/home', pathMatch: 'full' },
   { path: 'home', component: HomeComponent },
@@ -53,8 +55,8 @@ const routes: Routes = [
   { path: 'hygiene', component: HygieneComponent },
   { path: 'pshy', component: PshyComponent },
  { path: 'education', component: EducationComponent, canActivate: [AuthGuard], data: { role: 'CUSTOMER' } },
-  { path: 'healthcare-access', component: HealthcareAccessComponent },
-  { path: 'hcamps', component: HcampsComponent },
+  { path: 'healthcare-access', component: HealthcareAccessComponent, canActivate: [AuthGuard], data: { role: 'CUSTOMER'} },
+  { path: 'hcamps', component: HcampsComponent, canActivate: [AuthGuard], data: { role: 'CUSTOMER'}},
   { path: 'parents', component: ParentsComponent },
   { path: 'boys', component: BoysComponent },
   { path: 'menstrual-myths', component: MenstrualMythsComponent },
@@ -73,11 +75,11 @@ const routes: Routes = [
   { path: 'pshy-hormones-blog', component: PshyHormonesBlogComponent },
   { path: 'login', component: LoginComponent },
   { path: 'signup', component: SignupComponent },
-  { path: 'products', component: ProductsComponent },
-  { path: 'cart', component: CartComponent, canActivate: [AuthGuard] },
+  { path: 'products', component: ProductsComponent, },
+  { path: 'cart', component: CartComponent, canActivate: [AuthGuard], data: { role: 'CUSTOMER'} },
   { path: 'checkout', component: CheckoutComponent },
-
-  { path: 'donate', component: DonateComponent },
+  { path:'donate',component:DonateComponent},
+  { path:'my-orders',component:MyOrdersComponent},
 
 
 

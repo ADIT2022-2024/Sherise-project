@@ -9,6 +9,10 @@ import com.backend.demo.dto.PlaceOrderDto;
 import com.backend.demo.enums.OrderStatus;
 import com.backend.demo.exceptions.ValidationException;
 import com.backend.demo.repository.*;
+import com.backend.demo.services.razorpay.RazorpayService;
+import com.razorpay.RazorpayException;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,59 +44,72 @@ public class CartServiceImpl implements CartService {
     private CouponRepository couponRepository;
 
 
+    @Autowired
+    private RazorpayService razorpayService;
+
+
+
+
     public ResponseEntity<?> addProductToCart(AddProductInCartDto addProductInCartDto) {
-        // Try to find the active order for the user
-        Order activeOrder = orderRepository.findByUserIdAndOrderStatus(addProductInCartDto.getUserId(), OrderStatus.Pending);
+        try {
+            // Fetch or create the active order
+            Order activeOrder = orderRepository.findByUserIdAndOrderStatus(addProductInCartDto.getUserId(), OrderStatus.Pending);
 
-        if (activeOrder == null) {
-            // Create a new order if none exists
-            activeOrder = new Order();
-            activeOrder.setUser(userRepository.findById(addProductInCartDto.getUserId()).orElseThrow(() -> new RuntimeException("User not found")));
-            activeOrder.setOrderStatus(OrderStatus.Pending);
-            activeOrder.setTotalAmount(0L);
-            activeOrder.setAmount(0L);
-            activeOrder = orderRepository.save(activeOrder); // Save the new order to the database
-        }
-
-        // Fetch the product and user
-        Optional<Product> optionalProduct = productRepository.findById(addProductInCartDto.getProductId());
-        Optional<User> optionalUser = userRepository.findById(addProductInCartDto.getUserId());
-
-        if (optionalProduct.isPresent() && optionalUser.isPresent()) {
-            Product product = optionalProduct.get();
-            User user = optionalUser.get();
-
-            // Check if the product is already in the cart for this order
-            Optional<CartItems> optionalCartItems = cartItemsRepository.findByProductIdAndOrderIdAndUserId(
-                    addProductInCartDto.getProductId(), activeOrder.getId(), addProductInCartDto.getUserId());
-
-            CartItems cartItem;
-            if (optionalCartItems.isPresent()) {
-                // Product is already in the cart, update the quantity and price
-                cartItem = optionalCartItems.get();
-                cartItem.setQuantity(cartItem.getQuantity() + 1);
-                cartItem.setPrice(cartItem.getPrice() + product.getPrice());
-            } else {
-                // Product is not in the cart, add it as a new item
-                cartItem = new CartItems();
-                cartItem.setProduct(product);
-                cartItem.setPrice(product.getPrice());
-                cartItem.setQuantity(1L);
-                cartItem.setUser(user);
-                cartItem.setOrder(activeOrder);
-                activeOrder.getCartItems().add(cartItem);
+            if (activeOrder == null) {
+                // Create a new order if none exists
+                activeOrder = new Order();
+                User user = userRepository.findById(addProductInCartDto.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+                activeOrder.setUser(user);
+                activeOrder.setOrderStatus(OrderStatus.Pending);
+                activeOrder.setTotalAmount(0L);
+                activeOrder.setAmount(0L);
+                activeOrder = orderRepository.save(activeOrder); // Save the new order to the database
             }
 
-            // Save the cart item and update the order
-            cartItemsRepository.save(cartItem);
+            // Fetch the product and user
+            Optional<Product> optionalProduct = productRepository.findById(addProductInCartDto.getProductId());
+            Optional<User> optionalUser = userRepository.findById(addProductInCartDto.getUserId());
 
-            activeOrder.setTotalAmount(activeOrder.getTotalAmount() + product.getPrice());
-            activeOrder.setAmount(activeOrder.getAmount() + product.getPrice());
-            orderRepository.save(activeOrder);
+            if (optionalProduct.isPresent() && optionalUser.isPresent()) {
+                Product product = optionalProduct.get();
+                User user = optionalUser.get();
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(cartItem);
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User or product not found");
+                // Check if the product is already in the cart for this order
+                Optional<CartItems> optionalCartItems = cartItemsRepository.findByProductIdAndOrderIdAndUserId(
+                        addProductInCartDto.getProductId(), activeOrder.getId(), addProductInCartDto.getUserId());
+
+                CartItems cartItem;
+                if (optionalCartItems.isPresent()) {
+                    // Product is already in the cart, update the quantity and price
+                    cartItem = optionalCartItems.get();
+                    cartItem.setQuantity(cartItem.getQuantity() + 1);
+                    cartItem.setPrice(cartItem.getPrice() + product.getPrice());
+                } else {
+                    // Product is not in the cart, add it as a new item
+                    cartItem = new CartItems();
+                    cartItem.setProduct(product);
+                    cartItem.setPrice(product.getPrice());
+                    cartItem.setQuantity(1L);
+                    cartItem.setUser(user);
+                    cartItem.setOrder(activeOrder);
+                    activeOrder.getCartItems().add(cartItem);
+                }
+
+                // Save the cart item and update the order
+                cartItemsRepository.save(cartItem);
+
+                activeOrder.setTotalAmount(activeOrder.getTotalAmount() + product.getPrice());
+                activeOrder.setAmount(activeOrder.getAmount() + product.getPrice());
+                orderRepository.save(activeOrder);
+
+                return ResponseEntity.status(HttpStatus.CREATED).body("Product added to cart successfully.");
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User or product not found.");
+            }
+        } catch (Exception e) {
+            // Log the exception
+            System.err.println("Error adding product to cart: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while adding the product to the cart.");
         }
     }
 
@@ -277,31 +294,58 @@ public class CartServiceImpl implements CartService {
     }
 
 
-    public OrderDto placeOrder(PlaceOrderDto placeOrderDto){
-        Order activeOrder = orderRepository.findByUserIdAndOrderStatus(placeOrderDto.getUserId(), OrderStatus.Pending);
-        Optional<User> optionalUser = userRepository.findById(placeOrderDto.getUserId());
-        if(optionalUser.isPresent()){
-            activeOrder.setOrderDescription(placeOrderDto.getOrderDescription());
-            activeOrder.setAddress(placeOrderDto.getAddress());
-            activeOrder.setDate(new Date());
-            activeOrder.setOrderStatus(OrderStatus.Placed);
-            activeOrder.setTrackingId(UUID.randomUUID());
+    public ResponseEntity<?> placeOrder(PlaceOrderDto placeOrderDto) {
+        try {
+            // Find the active order for the user
+            Order activeOrder = orderRepository.findByUserIdAndOrderStatus(placeOrderDto.getUserId(), OrderStatus.Pending);
 
+            if (activeOrder == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No pending order found for this user.");
+            }
+
+            // Set additional details from placeOrderDto
+            activeOrder.setAddress(placeOrderDto.getAddress());
+            activeOrder.setOrderDescription(placeOrderDto.getOrderDescription());
+
+            // Generate a unique tracking ID
+            UUID trackingId = UUID.randomUUID();
+
+            // Process payment through Razorpay
+            JSONObject razorpayOrder = razorpayService.createOrder(activeOrder.getAmount());
+            JSONObject razorpayOrderJson = new JSONObject(razorpayOrder.toString());
+            String razorpayOrderId = razorpayOrderJson.getString("id"); // Extract Razorpay Order ID
+
+            // Set the Razorpay Order ID and tracking ID in your Order entity
+            activeOrder.setRazorpayOrderId(razorpayOrderId);
+            activeOrder.setTrackingId(trackingId);
+
+            // Set date and payment details
+            activeOrder.setDate(new Date()); // Set current date
+            activeOrder.setPayment("Razorpay"); // Set payment type
+
+            // Update order status to 'Processing'
+            activeOrder.setOrderStatus(OrderStatus.Placed);
             orderRepository.save(activeOrder);
 
-            Order order = new Order();
-            order.setAmount(0L);
-            order.setTotalAmount(0L);
-            order.setDiscount(0L);
-            order.setUser(optionalUser.get());
-            order.setOrderStatus(OrderStatus.Pending);
-            orderRepository.save(order);
-
-            return activeOrder.getOrderDto();
-
-
+            // Return response with the tracking ID and other details
+            return ResponseEntity.status(HttpStatus.CREATED).body("Order placed successfully. Tracking ID: " + trackingId.toString());
+        } catch (RazorpayException | JSONException e) {
+            // Handle exceptions appropriately
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error occurred while placing the order.");
         }
-        return null;
     }
+
+    public List<OrderDto> getMyPlacedOrders(Long userId) {
+        // Define the valid order statuses
+        List<OrderStatus> orderStatusList = List.of(OrderStatus.Placed, OrderStatus.Shipped, OrderStatus.Delivered);
+
+        // Call the corrected method from OrderRepository and map Orders to OrderDto
+        return orderRepository.findAllByUserIdAndOrderStatusIn(userId, orderStatusList)
+                .stream()
+                .map(Order::getOrderDto)
+                .collect(Collectors.toList());
+    }
+
+
 
 }
